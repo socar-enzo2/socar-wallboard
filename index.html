@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOCAR 컨택센터 전광판</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0e1a;color:#e8eaf0;font-family:'Segoe UI',sans-serif;min-height:100vh}
+#hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#111827;border-bottom:1px solid #1f2937;flex-wrap:wrap;gap:6px}
+#hdr h1{font-size:14px;font-weight:600;color:#60a5fa}
+.hdr-l{display:flex;align-items:center;gap:8px}
+.hdr-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#clock{font-size:12px;color:#9ca3af;font-variant-numeric:tabular-nums;min-width:72px}
+.hbtn{background:#1f2937;border:1px solid #374151;color:#d1d5db;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap}
+.hbtn:hover{background:#374151}
+.hbtn.on{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+.badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.badge.admin{background:#1e3a5f;color:#93c5fd}
+.badge.viewer{background:#14532d;color:#86efac}
+#bannerWrap{padding:0 12px}
+.banner{display:none;align-items:center;gap:10px;flex-wrap:wrap;border-radius:7px;padding:8px 12px;margin:8px 0 0;font-size:12px}
+.banner.show{display:flex}
+.banner.warn{background:#1a1000;border:1px solid #854d0e;color:#fbbf24}
+.banner.ok{background:#052e16;border:1px solid #166534;color:#86efac}
+.banner.info{background:#0f172a;border:1px solid #1e40af;color:#93c5fd}
+#sbar{display:flex;align-items:center;gap:8px;padding:4px 14px;background:#0d1220;border-bottom:1px solid #1a2030;font-size:11px;color:#6b7280}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.g{background:#10b981;animation:pulse 2s infinite}
+.dot.y{background:#f59e0b}.dot.r{background:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#wrap{overflow-x:auto;padding:6px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead th{background:#111827;color:#9ca3af;font-weight:500;padding:5px 3px;text-align:center;border:1px solid #1f2937;font-size:10px;position:sticky;top:0;z-index:5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+thead th.grp{background:#0f172a;color:#60a5fa;font-size:9px}
+thead th.ch-th{width:76px;min-width:76px}
+tbody tr:nth-child(even){background:#0d1220}
+tbody tr:hover{background:#1a2235}
+td{border:1px solid #161e2e;padding:3px 2px;text-align:center;vertical-align:middle}
+td.ch-td{background:#111827;border-right:2px solid #374151;padding:4px 2px}
+.ch-icon{font-size:15px;line-height:1}
+.ch-name{font-size:10px;color:#e8eaf0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
+.ch-sub{font-size:9px;color:#374151}
+.val{font-size:14px;font-weight:700;display:block;line-height:1.2}
+.unit{font-size:9px;color:#374151;display:block}
+.cn{color:#e8eaf0}.cw{color:#f59e0b}.cd{color:#ef4444}.cok{color:#10b981}
+.cbl{color:#60a5fa}.ccy{color:#22d3ee}.cpu{color:#a78bfa}.cpk{color:#f472b6}.clm{color:#84cc16}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:center;justify-content:center}
+#overlay.open{display:flex}
+.modal{background:#111827;border:1px solid #374151;border-radius:10px;padding:18px;width:540px;max-width:95vw;max-height:88vh;overflow-y:auto}
+.modal h2{font-size:13px;color:#93c5fd;margin-bottom:12px}
+.mbtns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.btn-p{background:#1d4ed8;border:none;color:#fff;padding:6px 14px;border-radius:5px;font-size:12px;cursor:pointer}
+.btn-p:hover{background:#2563eb}
+.btn-c{background:#374151;border:none;color:#d1d5db;padding:6px 14px;border-radius:5px;font-size:12px;cursor:pointer}
+.lbl{font-size:11px;color:#9ca3af;display:block;margin:8px 0 3px}
+.inp{width:100%;background:#1f2937;border:1px solid #374151;color:#e8eaf0;padding:5px 9px;border-radius:5px;font-size:12px}
+.sel{width:100%;background:#1f2937;border:1px solid #374151;color:#e8eaf0;padding:5px 9px;border-radius:5px;font-size:12px}
+.divider{border-top:1px solid #1f2937;margin:12px 0}
+.hint{font-size:10px;color:#4b5563;line-height:1.6}
+.tag-ok{display:inline-block;background:#14532d;color:#86efac;padding:2px 8px;border-radius:4px;font-size:11px}
+.tag-err{display:inline-block;background:#7f1d1d;color:#fca5a5;padding:2px 8px;border-radius:4px;font-size:11px}
+.drow{display:flex;align-items:center;gap:7px;padding:5px 2px;border-bottom:1px solid #1a2030}
+.drow.dragging{opacity:.35}.drow.over{border-top:2px solid #3b82f6}
+.drag{cursor:grab;color:#374151;font-size:15px;padding:0 2px;user-select:none}
+.drow .dlbl{flex:1;font-size:12px}
+.drow .dsub{font-size:10px;color:#4b5563;min-width:32px;text-align:right}
+.btn-xs{background:#374151;border:none;color:#d1d5db;padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer}
+.btn-xs:hover{background:#4b5563}
+.btn-xd{background:#7f1d1d;border:none;color:#fca5a5;padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer}
+.qlist{max-height:200px;overflow-y:auto;border:1px solid #1f2937;border-radius:6px;background:#0d1220}
+.qitem{display:flex;align-items:center;gap:8px;padding:5px 9px;font-size:11px;border-bottom:1px solid #161e2e}
+.qitem:hover{background:#1a2235}
+.qitem input[type=checkbox]{width:auto}
+.qsearch{width:100%;background:#1f2937;border:1px solid #374151;color:#e8eaf0;padding:5px 9px;border-radius:5px;font-size:11px;margin-bottom:6px}
+.tgrid{display:grid;grid-template-columns:1fr 56px 56px 32px 18px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid #1a2030;font-size:11px}
+.tgrid span{color:#9ca3af}
+.tgrid input[type=number]{background:#1f2937;border:1px solid #374151;color:#e8eaf0;padding:3px 5px;border-radius:4px;width:100%}
+.tgrid input[type=color]{width:30px;height:20px;padding:1px;border-radius:3px;border:1px solid #374151;cursor:pointer}
+.tgrid input[type=checkbox]{width:auto;cursor:pointer}
+.ly-item{display:flex;align-items:center;gap:8px;background:#1f2937;border-radius:5px;padding:6px 10px;margin-bottom:6px}
+.ly-item span{flex:1;font-size:12px}
+.ly-item .ts{font-size:10px;color:#4b5563}
+.link-box{background:#0d1220;border:1px solid #1f2937;border-radius:6px;padding:8px 10px;font-size:10px;color:#6b7280;word-break:break-all;margin-top:6px;max-height:80px;overflow-y:auto;line-height:1.5}
+.step-box{background:#0d1220;border:1px solid #1f2937;border-radius:6px;padding:10px 12px;margin-top:8px;font-size:11px;line-height:1.8;color:#9ca3af}
+.step-box code{color:#60a5fa;background:#111827;padding:1px 5px;border-radius:3px;font-size:10px}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="hdr-l">
+    <span class="dot y" id="liveDot"></span>
+    <h1>🚗 SOCAR 컨택센터 전광판</h1>
+    <span class="badge admin" id="modeBadge">관리자</span>
+  </div>
+  <div class="hdr-r">
+    <span id="clock"></span>
+    <span id="adminControls" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <button class="hbtn" onclick="openModal('auth')">⚙ 연결 설정</button>
+      <button class="hbtn" id="shareBtn" style="display:none" onclick="openModal('share')">🔗 공유 링크</button>
+    </span>
+    <button class="hbtn" onclick="openModal('queue')">큐 선택</button>
+    <button class="hbtn" onclick="openModal('col')">컬럼 설정</button>
+    <button class="hbtn" onclick="openModal('thresh')">임계값</button>
+    <button class="hbtn" onclick="openModal('layout')">레이아웃</button>
+    <button class="hbtn on" id="rfBtn" onclick="toggleRf()">⟳ 실시간 ON</button>
+  </div>
+</div>
+
+<div id="bannerWrap">
+  <div class="banner warn show" id="authBanner">
+    <span>⚠ Genesys 미연결 — Mock 데이터 표시 중</span>
+    <button class="btn-xs" onclick="openModal('auth')">연결 설정</button>
+  </div>
+  <div class="banner ok" id="connBanner">
+    <span id="connTxt"></span>
+    <button class="btn-xs" onclick="openModal('share')">🔗 공유 링크</button>
+    <button class="btn-xs" onclick="openModal('auth')">설정 변경</button>
+  </div>
+  <div class="banner info" id="viewerBanner">
+    <span>👁 뷰어 모드 — 큐/컬럼 커스텀은 내 브라우저에만 저장됩니다</span>
+  </div>
+</div>
+
+<div id="sbar">
+  <span class="dot y" id="sDot"></span>
+  <span id="sTxt">Mock 데이터</span>
+  <span style="margin-left:auto;font-variant-numeric:tabular-nums" id="sLast"></span>
+</div>
+
+<div id="wrap">
+  <table id="tbl"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+</div>
+<div id="overlay"><div class="modal" id="mContent"></div></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  METRIC DEFINITIONS
+// ══════════════════════════════════════════════
+const ALL_METRICS = [
+  {id:'oWaiting',          label:'대기중',      unit:'명', group:'',      color:'cw',  warnAt:3,  dangerAt:6,  reverse:false},
+  {id:'oInteracting',      label:'IB 통화중',   unit:'명', group:'통화중',color:'cbl', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'oRS_INTERACTING',   label:'OB 통화중',   unit:'명', group:'통화중',color:'ccy', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'oAlerting',         label:'알림중',      unit:'명', group:'',      color:'ccy', warnAt:3,  dangerAt:6,  reverse:false},
+  {id:'oOnQueueUsers',     label:'로그인',      unit:'명', group:'',      color:'cok', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'oRS_IDLE',          label:'대기가능',    unit:'명', group:'',      color:'cok', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'oRS_NOT_RESPONDING',label:'미응답',      unit:'명', group:'',      color:'cd',  warnAt:1,  dangerAt:3,  reverse:false},
+  {id:'nOffered',          label:'상담시도',    unit:'건', group:'',      color:'cw',  warnAt:50, dangerAt:100,reverse:false},
+  {id:'nHandled',          label:'상담성공',    unit:'건', group:'',      color:'cok', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'nAbandonedExclSysTransfers',label:'상담실패',unit:'건',group:'',   color:'cd',  warnAt:3,  dangerAt:7,  reverse:false},
+  {id:'nTransferred',      label:'호전환수',    unit:'건', group:'',      color:'cpu', warnAt:5,  dangerAt:10, reverse:false},
+  {id:'nOutbound',         label:'OB콜',        unit:'건', group:'',      color:'ccy', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'_answerRate',       label:'응대율',      unit:'%',  group:'',      color:'cok', warnAt:90, dangerAt:80, reverse:true},
+  {id:'_abandonRate',      label:'포기율',      unit:'%',  group:'',      color:'cd',  warnAt:5,  dangerAt:10, reverse:false},
+  {id:'tServiceLevel',     label:'서비스레벨',  unit:'%',  group:'',      color:'cok', warnAt:80, dangerAt:70, reverse:true},
+  {id:'tAbandon',          label:'장콜수',      unit:'콜', group:'',      color:'cd',  warnAt:3,  dangerAt:7,  reverse:false},
+  {id:'tHandle',           label:'평균처리(s)', unit:'초', group:'',      color:'cw',  warnAt:180,dangerAt:300,reverse:false},
+  {id:'ag_after',          label:'후처리',      unit:'명', group:'상담원',color:'cbl', warnAt:3,  dangerAt:6,  reverse:false},
+  {id:'ag_break',          label:'휴식중',      unit:'명', group:'상담원',color:'ccy', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'ag_together',       label:'동석',        unit:'명', group:'상담원',color:'clm', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'ag_coaching',       label:'코칭',        unit:'명', group:'상담원',color:'cpk', warnAt:0,  dangerAt:0,  reverse:false},
+  {id:'ag_meal',           label:'식사',        unit:'명', group:'상담원',color:'cw',  warnAt:0,  dangerAt:0,  reverse:false},
+];
+const DEFAULT_COLS = ['oWaiting','oInteracting','oRS_INTERACTING','nOffered','nHandled','nAbandonedExclSysTransfers','nTransferred','_answerRate','tServiceLevel','oOnQueueUsers','ag_after','ag_break','ag_coaching'];
+const MOCK_QUEUES = [
+  {id:'q-001',name:'일반상담',icon:'🖥'},{id:'q-002',name:'대차상담',icon:'⇄'},
+  {id:'q-003',name:'사고처리',icon:'🚘'},{id:'q-004',name:'제휴문의',icon:'🤝'},
+  {id:'q-005',name:'플랜상담',icon:'📅'},{id:'q-006',name:'채팅지원',icon:'💬'},
+  {id:'q-007',name:'핸들상담',icon:'🎧'},
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+const S = {
+  tokenFnUrl:'',   // Cloud Functions URL
+  gcRegion:'',     // Genesys region (데이터 API 호출용)
+  token:null,      // {val, exp(ms)}
+  tokTimer:null,
+  connected:false,
+  isViewer:false,
+  allQueues:[...MOCK_QUEUES],
+  activeQIds:MOCK_QUEUES.map(q=>q.id),
+  cols:DEFAULT_COLS.map(id=>{const d=ALL_METRICS.find(m=>m.id===id);return d?{...d}:null}).filter(Boolean),
+  data:{},
+  layouts:JSON.parse(localStorage.getItem('sb_ly_v6')||'[]'),
+  autoRf:true, rfSec:10, rfTimer:null,
+};
+
+// ══════════════════════════════════════════════
+//  TOKEN — Cloud Functions에서 발급받기
+// ══════════════════════════════════════════════
+async function fetchTokenFromCF() {
+  const r = await fetch(S.tokenFnUrl);
+  if (!r.ok) throw new Error(`CF ${r.status}: ${r.statusText}`);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  S.token = {val: d.access_token, exp: d.expires_at};
+  // 만료 2분 전 자동 갱신
+  if (S.tokTimer) clearTimeout(S.tokTimer);
+  const msLeft = d.expires_at - Date.now() - 120000;
+  if (msLeft > 0) S.tokTimer = setTimeout(silentRefresh, msLeft);
+}
+async function silentRefresh() {
+  try { await fetchTokenFromCF(); }
+  catch(e) { setStatus('error','토큰 갱신 실패: '+e.message); }
+}
+function getToken() {
+  if (!S.token || Date.now() > S.token.exp - 5000) return null;
+  return S.token.val;
+}
+
+// ══════════════════════════════════════════════
+//  GENESYS DATA API (브라우저 직접 호출)
+// ══════════════════════════════════════════════
+async function gcGet(path) {
+  const t=getToken(); if(!t){await fetchTokenFromCF(); return gcGet(path);}
+  const r=await fetch(`https://api.${S.gcRegion}${path}`,{headers:{Authorization:'Bearer '+t}});
+  if(r.status===401){await fetchTokenFromCF(); return gcGet(path);}
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function gcPost(path,body) {
+  const t=getToken(); if(!t){await fetchTokenFromCF(); return gcPost(path,body);}
+  const r=await fetch(`https://api.${S.gcRegion}${path}`,{
+    method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(r.status===401){await fetchTokenFromCF(); return gcPost(path,body);}
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function loadQueues() {
+  let all=[],page=1;
+  while(true){
+    const d=await gcGet(`/api/v2/routing/queues?pageSize=100&pageNumber=${page}&sortBy=name`);
+    all=all.concat(d.entities||[]);
+    if(all.length>=(d.total||0)) break;
+    page++;
+  }
+  return all.map(q=>({id:q.id,name:q.name,icon:'📞'}));
+}
+async function fetchData(qids) {
+  const filter={type:'OR',predicates:qids.map(id=>({type:'DIMENSION',dimension:'queueId',operator:'MATCHES',value:id}))};
+  const now=new Date(),d0=new Date(now); d0.setHours(0,0,0,0);
+  const [obs,agg]=await Promise.all([
+    gcPost('/api/v2/analytics/queues/observations/query',{
+      filter,metrics:['oWaiting','oInteracting','oAlerting','oOnQueueUsers','oUserRoutingStatuses']
+    }),
+    gcPost('/api/v2/analytics/conversations/aggregates/query',{
+      interval:`${d0.toISOString()}/${now.toISOString()}`,
+      groupBy:['queueId'],filter,
+      metrics:['nOffered','nHandled','nAbandonedExclSysTransfers','nTransferred','nOutbound','tServiceLevel','tAbandon','tHandle'],
+      granularity:'PT24H'
+    })
+  ]);
+  const out={}; qids.forEach(id=>{out[id]={};});
+  (obs.results||[]).forEach(r=>{
+    const qid=r.group?.queueId; if(!qid||!out[qid]) return;
+    (r.data||[]).forEach(d=>{
+      const m=d.metric,v=d.stats?.count??0;
+      if(m==='oUserRoutingStatuses'){
+        (d.observations||[]).forEach(o=>{out[qid][`oRS_${o.routingStatus}`]=(out[qid][`oRS_${o.routingStatus}`]||0)+1;});
+      } else out[qid][m]=v;
+    });
+  });
+  (agg.results||[]).forEach(r=>{
+    const qid=r.group?.queueId; if(!qid||!out[qid]) return;
+    (r.data||[]).forEach(d=>{
+      const m=d.metric,st=d.stats||{};
+      if(m==='tHandle') out[qid][m]=Math.round((st.sum||0)/1000);
+      else if(m==='tServiceLevel') out[qid][m]=Math.round((st.ratio||0)*100);
+      else out[qid][m]=st.count||0;
+    });
+    const off=out[qid].nOffered||0;
+    out[qid]._answerRate =off?Math.round((out[qid].nHandled||0)/off*100):0;
+    out[qid]._abandonRate=off?Math.round((out[qid].nAbandonedExclSysTransfers||0)/off*100):0;
+  });
+  return out;
+}
+
+// ══════════════════════════════════════════════
+//  MOCK
+// ══════════════════════════════════════════════
+function mockData(){
+  const base={'q-001':{oWaiting:3,oInteracting:1,oRS_INTERACTING:0,nOffered:106,nHandled:104,nAbandonedExclSysTransfers:3,nTransferred:4,_answerRate:98,tServiceLevel:85,tAbandon:0,oOnQueueUsers:9,ag_after:2,ag_break:0,ag_coaching:1,ag_together:0,ag_meal:0},'q-002':{oWaiting:0,oInteracting:0,oRS_INTERACTING:0,nOffered:19,nHandled:17,nAbandonedExclSysTransfers:2,nTransferred:2,_answerRate:89,tServiceLevel:74,tAbandon:0,oOnQueueUsers:5,ag_after:2,ag_break:0,ag_coaching:1,ag_together:0,ag_meal:0},'q-003':{oWaiting:1,oInteracting:0,oRS_INTERACTING:0,nOffered:18,nHandled:18,nAbandonedExclSysTransfers:0,nTransferred:1,_answerRate:100,tServiceLevel:100,tAbandon:0,oOnQueueUsers:4,ag_after:0,ag_break:0,ag_coaching:1,ag_together:0,ag_meal:0},'q-004':{oWaiting:3,oInteracting:1,oRS_INTERACTING:0,nOffered:0,nHandled:0,nAbandonedExclSysTransfers:0,nTransferred:0,_answerRate:0,tServiceLevel:0,tAbandon:0,oOnQueueUsers:9,ag_after:2,ag_break:0,ag_coaching:1,ag_together:0,ag_meal:0},'q-005':{oWaiting:0,oInteracting:0,oRS_INTERACTING:0,nOffered:0,nHandled:0,nAbandonedExclSysTransfers:0,nTransferred:0,_answerRate:0,tServiceLevel:0,tAbandon:0,oOnQueueUsers:0,ag_after:0,ag_break:0,ag_coaching:0,ag_together:0,ag_meal:0},'q-006':{oWaiting:2,oInteracting:0,oRS_INTERACTING:0,nOffered:0,nHandled:0,nAbandonedExclSysTransfers:0,nTransferred:0,_answerRate:0,tServiceLevel:0,tAbandon:0,oOnQueueUsers:4,ag_after:0,ag_break:0,ag_coaching:1,ag_together:0,ag_meal:0},'q-007':{oWaiting:0,oInteracting:2,oRS_INTERACTING:0,nOffered:92,nHandled:89,nAbandonedExclSysTransfers:2,nTransferred:3,_answerRate:97,tServiceLevel:90,tAbandon:0,oOnQueueUsers:7,ag_after:2,ag_break:0,ag_coaching:2,ag_together:0,ag_meal:0}};
+  const out={};
+  Object.keys(base).forEach(id=>{out[id]={};Object.keys(base[id]).forEach(k=>{out[id][k]=Math.max(0,base[id][k]+Math.floor((Math.random()-.5)*2));});});
+  return out;
+}
+
+// ══════════════════════════════════════════════
+//  VIEWER MODE
+// ══════════════════════════════════════════════
+function handleViewerParam() {
+  const p=new URLSearchParams(location.search);
+  if(!p.has('v')) return false;
+  S.isViewer=true;
+  try {
+    const cfg=JSON.parse(atob(p.get('v')));
+    S.tokenFnUrl=cfg.f||'';
+    S.gcRegion=cfg.r||'';
+    S.rfSec=cfg.s||10;
+    S.connected=!!(S.tokenFnUrl&&S.gcRegion);
+    if(cfg.qids) S.activeQIds=cfg.qids;
+    if(cfg.cols) S.cols=cfg.cols.map(id=>{const d=ALL_METRICS.find(m=>m.id===id);return d?{...d}:null}).filter(Boolean);
+  } catch(e) {}
+  // 뷰어 개인설정 복원
+  try {
+    const pref=JSON.parse(localStorage.getItem('sb_vp_v6')||'{}');
+    if(pref.activeQIds) S.activeQIds=pref.activeQIds;
+    if(pref.cols) S.cols=pref.cols.map(id=>{const d=ALL_METRICS.find(m=>m.id===id);return d?{...d}:null}).filter(Boolean);
+  } catch(e) {}
+  document.getElementById('adminControls').style.display='none';
+  document.getElementById('modeBadge').textContent='뷰어';
+  document.getElementById('modeBadge').className='badge viewer';
+  document.getElementById('viewerBanner').classList.add('show');
+  if(S.connected) document.getElementById('authBanner').classList.remove('show');
+  return true;
+}
+function saveViewerPref(){
+  if(!S.isViewer) return;
+  localStorage.setItem('sb_vp_v6',JSON.stringify({activeQIds:S.activeQIds,cols:S.cols.map(c=>c.id)}));
+}
+
+// ══════════════════════════════════════════════
+//  REFRESH
+// ══════════════════════════════════════════════
+async function refresh(){
+  setStatus('loading');
+  try{
+    if(S.connected){
+      S.data=await fetchData(S.activeQIds);
+      setStatus('live');
+    } else {
+      S.data=mockData();
+      setStatus('mock');
+    }
+  }catch(e){setStatus('error',e.message);S.data=mockData();}
+  renderTable();
+  document.getElementById('sLast').textContent='최종: '+new Date().toLocaleTimeString('ko-KR',{hour12:false});
+}
+function setStatus(s,msg=''){
+  const dot=document.getElementById('sDot'),txt=document.getElementById('sTxt'),ld=document.getElementById('liveDot');
+  if(s==='live'){dot.className='dot g';txt.textContent='Genesys Cloud 실시간';ld.className='dot g';}
+  else if(s==='mock'){dot.className='dot y';txt.textContent='Mock 데이터 (미연결)';ld.className='dot y';}
+  else if(s==='loading'){dot.className='dot y';txt.textContent='갱신 중...';}
+  else{dot.className='dot r';txt.textContent='오류: '+msg;ld.className='dot r';}
+}
+function startTimer(){if(S.rfTimer)clearInterval(S.rfTimer);if(S.autoRf)S.rfTimer=setInterval(refresh,S.rfSec*1000);}
+function toggleRf(){S.autoRf=!S.autoRf;const b=document.getElementById('rfBtn');b.textContent=S.autoRf?'⟳ 실시간 ON':'⟳ 실시간 OFF';b.className=S.autoRf?'hbtn on':'hbtn';startTimer();}
+
+// ══════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════
+function colorClass(col,val){
+  if(col.reverse){if(col.dangerAt>0&&val<=col.dangerAt)return'cd';if(col.warnAt>0&&val<=col.warnAt)return'cw';return col.color;}
+  if(col.dangerAt>0&&val>=col.dangerAt)return'cd';if(col.warnAt>0&&val>=col.warnAt)return'cw';return col.color;
+}
+function renderTable(){
+  const aq=S.activeQIds.map(id=>S.allQueues.find(q=>q.id===id)).filter(Boolean);
+  const ec=S.cols;
+  const thead=document.getElementById('thead'),tbody=document.getElementById('tbody');
+  const hasGroup=ec.some(c=>c.group);
+  if(hasGroup){
+    let h1=`<tr><th class="ch-th" rowspan="2">채널</th>`,h2='<tr>';
+    let seen=new Set();
+    ec.forEach(c=>{if(c.group){if(!seen.has(c.group)){seen.add(c.group);const sp=ec.filter(x=>x.group===c.group).length;h1+=`<th colspan="${sp}" class="grp">${c.group}</th>`;}h2+=`<th>${c.label}</th>`;}else h1+=`<th rowspan="2">${c.label}</th>`;});
+    thead.innerHTML=h1+'</tr>'+h2+'</tr>';
+  } else {
+    thead.innerHTML='<tr><th class="ch-th">채널</th>'+ec.map(c=>`<th>${c.label}</th>`).join('')+'</tr>';
+  }
+  tbody.innerHTML=aq.map(q=>{
+    const row=S.data[q.id]||{};
+    return`<tr><td class="ch-td"><div class="ch-icon">${q.icon||'📞'}</div><div class="ch-name">${q.name}</div><div class="ch-sub">${q.id.slice(0,8)}</div></td>`
+      +ec.map(c=>{const raw=row[c.id]??0;return`<td><span class="val ${colorClass(c,raw)}">${raw}</span><span class="unit">${c.unit}</span></td>`;}).join('')+'</tr>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════════
+function openModal(t){
+  const B={auth:buildAuth,share:buildShare,queue:buildQueue,col:buildCol,thresh:buildThresh,layout:buildLayout};
+  document.getElementById('mContent').innerHTML=B[t]?.()??'';
+  document.getElementById('overlay').classList.add('open');
+  if(t==='col') initDrag();
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal();});
+
+// ── 연결 설정 ──
+function buildAuth(){
+  const regions=['apne2.pure.cloud','mypurecloud.com','mypurecloud.com.au','mypurecloud.jp','mypurecloud.de','mypurecloud.ie','usw2.pure.cloud','cac1.pure.cloud'];
+  const opts=regions.map(r=>`<option value="${r}" ${S.gcRegion===r?'selected':''}>${r}</option>`).join('');
+  return `<h2>⚙ Genesys Cloud 연결 설정</h2>
+  <label class="lbl">Cloud Functions URL <span class="hint">(배포 후 발급되는 URL)</span></label>
+  <input class="inp" id="cfUrl" value="${S.tokenFnUrl}" placeholder="https://asia-northeast3-PROJECT.cloudfunctions.net/socar-gc-token">
+  <label class="lbl">Genesys Region (데이터 API 호출용)</label>
+  <select class="sel" id="gcReg">${opts}</select>
+  <label class="lbl">갱신 주기 (초)</label>
+  <input class="inp" id="rfSec" type="number" min="5" max="300" value="${S.rfSec}">
+  <div class="step-box">
+    <strong style="color:#9ca3af">Cloud Functions 아직 배포 안 했다면:</strong><br>
+    1. <code>main.py</code> + <code>requirements.txt</code> 폴더 생성<br>
+    2. <code>deploy.sh</code> 상단 설정값 채우기<br>
+    3. <code>bash deploy.sh</code> 실행 → 출력된 URL 위에 입력
+  </div>
+  <div id="authMsg"></div>
+  <div class="mbtns">
+    <button class="btn-c" onclick="closeModal()">취소</button>
+    <button class="btn-p" onclick="applyAuth()">연결 테스트</button>
+  </div>`;
+}
+async function applyAuth(){
+  S.tokenFnUrl=document.getElementById('cfUrl').value.trim().replace(/\/$/,'');
+  S.gcRegion=document.getElementById('gcReg').value;
+  S.rfSec=parseInt(document.getElementById('rfSec').value)||10;
+  const msg=document.getElementById('authMsg');
+  msg.innerHTML='<p style="font-size:11px;color:#f59e0b;margin-top:6px">연결 테스트 중...</p>';
+  try{
+    await fetchTokenFromCF();
+    const qs=await loadQueues();
+    S.allQueues=qs; S.connected=true;
+    document.getElementById('authBanner').classList.remove('show');
+    document.getElementById('connBanner').classList.add('show');
+    document.getElementById('connTxt').textContent=`✅ 연결됨 — 큐 ${qs.length}개 로드 (${S.gcRegion})`;
+    document.getElementById('shareBtn').style.display='';
+    localStorage.setItem('sb_admin_v6',JSON.stringify({tokenFnUrl:S.tokenFnUrl,gcRegion:S.gcRegion,rfSec:S.rfSec}));
+    msg.innerHTML=`<span class="tag-ok">✅ 토큰 발급 성공, 큐 ${qs.length}개 확인</span>`;
+    startTimer(); refresh();
+    setTimeout(closeModal,1500);
+  }catch(e){
+    msg.innerHTML=`<span class="tag-err">❌ 실패: ${e.message}</span>
+    <p class="hint" style="margin-top:6px">
+      • Cloud Functions URL이 올바른지 확인<br>
+      • <code>curl ${S.tokenFnUrl||'[URL]'}</code> 로 직접 테스트<br>
+      • GCP 콘솔 → Functions → 로그 탭 확인
+    </p>`;
+  }
+}
+
+// ── 공유 링크 ──
+function buildShare(){
+  if(!S.connected) return`<h2>🔗 공유 링크</h2><p class="hint" style="color:#f59e0b">먼저 연결 설정을 완료해주세요.</p><div class="mbtns"><button class="btn-c" onclick="closeModal()">닫기</button></div>`;
+  // 토큰 없이 CF URL + region만 인코딩 → 영구 링크
+  const cfg=btoa(JSON.stringify({f:S.tokenFnUrl,r:S.gcRegion,s:S.rfSec,qids:S.activeQIds,cols:S.cols.map(c=>c.id)}));
+  const url=`${location.origin}${location.pathname}?v=${cfg}`;
+  return `<h2>🔗 뷰어 공유 링크</h2>
+  <p class="hint">
+    토큰이 포함되지 않은 <strong style="color:#86efac">영구 링크</strong>입니다.<br>
+    Cloud Functions URL + Region만 인코딩되므로 만료가 없습니다.<br>
+    뷰어가 접속하면 CF에서 토큰을 자동으로 발급받아 연결됩니다.
+  </p>
+  <div class="link-box" id="genLinkBox">${url}</div>
+  <button class="btn-xs" style="margin-top:8px" onclick="copyLink()">링크 복사</button>
+  <div class="mbtns"><button class="btn-c" onclick="closeModal()">닫기</button></div>`;
+}
+function copyLink(){
+  navigator.clipboard.writeText(document.getElementById('genLinkBox')?.textContent||'')
+    .then(()=>{const b=event.target;b.textContent='복사됨 ✓';setTimeout(()=>{b.textContent='링크 복사';},2000);});
+}
+
+// ── 큐 선택 ──
+function buildQueue(){
+  const act=new Set(S.activeQIds);
+  const items=S.allQueues.map(q=>`<label class="qitem"><input type="checkbox" ${act.has(q.id)?'checked':''} onchange="toggleQueue('${q.id}',this.checked)"><span style="flex:1">${q.icon||'📞'} ${q.name}</span><span style="font-size:9px;color:#374151">${q.id.slice(0,8)}</span></label>`).join('');
+  return `<h2>📡 큐 선택 <span style="font-size:10px;color:#4b5563">(${S.activeQIds.length}/${S.allQueues.length})</span></h2>
+  <input class="qsearch" placeholder="큐 이름 검색..." oninput="filterQ(this.value)">
+  <div class="qlist" id="qlistEl">${items}</div>
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <button class="btn-xs" onclick="allQ(true)">전체 선택</button>
+    <button class="btn-xs" onclick="allQ(false)">전체 해제</button>
+    ${S.isViewer?'<span class="hint" style="margin-left:4px">내 브라우저에 저장됩니다</span>':''}
+  </div>
+  <div class="mbtns"><button class="btn-c" onclick="closeModal()">취소</button><button class="btn-p" onclick="applyQueue()">적용</button></div>`;
+}
+function toggleQueue(id,on){on?(!S.activeQIds.includes(id)&&S.activeQIds.push(id)):(S.activeQIds=S.activeQIds.filter(x=>x!==id));}
+function allQ(on){S.activeQIds=on?S.allQueues.map(q=>q.id):[];document.getElementById('mContent').innerHTML=buildQueue();}
+function filterQ(q){document.querySelectorAll('.qitem').forEach(el=>{el.style.display=el.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
+function applyQueue(){saveViewerPref();renderTable();closeModal();}
+
+// ── 컬럼 설정 ──
+function buildCol(){
+  const avail=ALL_METRICS.filter(m=>!S.cols.find(c=>c.id===m.id));
+  const rows=S.cols.map((c,i)=>`<div class="drow" draggable="true" data-i="${i}"><span class="drag">⠿</span><input type="checkbox" style="width:auto" ${c.hidden?'':'checked'} onchange="S.cols[${i}].hidden=!this.checked"><span class="dlbl">${c.label}</span><span class="dsub">${c.unit||'—'}</span><button class="btn-xd" onclick="removeCol(${i})">삭제</button></div>`).join('');
+  const opts=avail.map(m=>`<option value="${m.id}">[${m.group||'기본'}] ${m.label}</option>`).join('');
+  return `<h2>📊 컬럼 설정${S.isViewer?' <span style="font-size:10px;color:#4b5563">— 내 브라우저 저장</span>':''}</h2>
+  <p class="hint" style="margin-bottom:8px">드래그로 순서 변경 · 체크박스로 표시/숨김</p>
+  <div id="colList">${rows}</div>
+  <div class="divider"></div>
+  <div style="display:flex;gap:6px"><select class="sel" id="addSel" style="flex:1">${opts||'<option>추가 가능한 지표 없음</option>'}</select><button class="btn-xs" onclick="addCol()">추가</button></div>
+  <div class="mbtns"><button class="btn-c" onclick="closeModal()">취소</button><button class="btn-p" onclick="applyCol()">적용</button></div>`;
+}
+function removeCol(i){S.cols.splice(i,1);document.getElementById('mContent').innerHTML=buildCol();initDrag();}
+function addCol(){const s=document.getElementById('addSel');if(!s)return;const d=ALL_METRICS.find(m=>m.id===s.value);if(!d||S.cols.find(c=>c.id===d.id))return;S.cols.push({...d});document.getElementById('mContent').innerHTML=buildCol();initDrag();}
+function applyCol(){saveViewerPref();renderTable();closeModal();}
+let dragI=null;
+function initDrag(){
+  document.querySelectorAll('#colList .drow').forEach(el=>{
+    el.addEventListener('dragstart',()=>{dragI=+el.dataset.i;el.classList.add('dragging');});
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');dragI=null;});
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('over'));
+    el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('over');const to=+el.dataset.i;if(dragI===null||dragI===to)return;S.cols.splice(to,0,S.cols.splice(dragI,1)[0]);document.getElementById('mContent').innerHTML=buildCol();initDrag();});
+  });
+}
+
+// ── 임계값 ──
+const CC={'cn':'#e8eaf0','cw':'#f59e0b','cd':'#ef4444','cok':'#10b981','cbl':'#60a5fa','ccy':'#22d3ee','cpu':'#a78bfa','cpk':'#f472b6','clm':'#84cc16'};
+const HC=Object.fromEntries(Object.entries(CC).map(([k,v])=>[v,k]));
+function buildThresh(){
+  return`<h2>🎨 임계값 &amp; 색상</h2>
+  <div style="display:grid;grid-template-columns:1fr 56px 56px 32px 18px;gap:4px;font-size:10px;color:#4b5563;padding:3px 0 6px"><span>지표</span><span style="text-align:center">경고</span><span style="text-align:center">위험</span><span>색상</span><span title="낮을수록 위험">역↓</span></div>
+  ${S.cols.map((c,i)=>`<div class="tgrid"><span>${c.label}</span><input type="number" value="${c.warnAt}" min="0" onchange="S.cols[${i}].warnAt=+this.value"><input type="number" value="${c.dangerAt}" min="0" onchange="S.cols[${i}].dangerAt=+this.value"><input type="color" value="${CC[c.color]||'#e8eaf0'}" onchange="S.cols[${i}].color=HC[this.value]||'cn'"><input type="checkbox" ${c.reverse?'checked':''} onchange="S.cols[${i}].reverse=this.checked"></div>`).join('')}
+  <p class="hint" style="margin-top:6px">역↓: 응대율처럼 낮을수록 위험한 지표에 체크</p>
+  <div class="mbtns"><button class="btn-c" onclick="closeModal()">닫기</button><button class="btn-p" onclick="saveViewerPref();renderTable();closeModal()">적용</button></div>`;
+}
+
+// ── 레이아웃 ──
+function buildLayout(){
+  const items=S.layouts.map((l,i)=>`<div class="ly-item"><span>${l.name}</span><span class="ts">${l.ts}</span><button class="btn-xs" onclick="loadLayout(${i})">불러오기</button><button class="btn-xd" onclick="delLayout(${i})">삭제</button></div>`).join('');
+  return`<h2>💾 레이아웃</h2>
+  <div style="display:flex;gap:6px;margin-bottom:10px"><input class="inp" id="lyN" placeholder="레이아웃 이름" style="flex:1"><button class="btn-xs" onclick="saveLayout()">저장</button></div>
+  <div>${items||'<p class="hint" style="padding:8px">저장된 레이아웃 없음</p>'}</div>
+  <div class="mbtns"><button class="btn-c" onclick="closeModal()">닫기</button></div>`;
+}
+function saveLayout(){const name=document.getElementById('lyN').value.trim()||'레이아웃 '+(S.layouts.length+1);S.layouts.push({name,ts:new Date().toLocaleString('ko-KR'),cols:JSON.parse(JSON.stringify(S.cols)),activeQIds:[...S.activeQIds]});localStorage.setItem('sb_ly_v6',JSON.stringify(S.layouts));document.getElementById('mContent').innerHTML=buildLayout();}
+function loadLayout(i){const l=S.layouts[i];S.cols=[...l.cols];S.activeQIds=[...l.activeQIds];renderTable();closeModal();}
+function delLayout(i){S.layouts.splice(i,1);localStorage.setItem('sb_ly_v6',JSON.stringify(S.layouts));document.getElementById('mContent').innerHTML=buildLayout();}
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false});}
+setInterval(updateClock,1000); updateClock();
+
+// 관리자 설정 복원
+(()=>{const a=localStorage.getItem('sb_admin_v6');if(a){try{const d=JSON.parse(a);S.tokenFnUrl=d.tokenFnUrl||'';S.gcRegion=d.gcRegion||'';S.rfSec=d.rfSec||10;}catch(e){}}})();
+
+(async()=>{
+  const isViewer=handleViewerParam();
+  if(S.tokenFnUrl&&S.gcRegion){
+    try{
+      await fetchTokenFromCF();
+      const qs=await loadQueues();
+      S.allQueues=qs; S.connected=true;
+      if(!isViewer){
+        document.getElementById('authBanner').classList.remove('show');
+        document.getElementById('connBanner').classList.add('show');
+        document.getElementById('connTxt').textContent=`✅ 연결됨 — 큐 ${qs.length}개 (${S.gcRegion})`;
+        document.getElementById('shareBtn').style.display='';
+      }
+    }catch(e){console.warn('자동 연결 실패:',e.message);}
+  }
+  refresh();
+  startTimer();
+})();
+</script>
+</body>
+</html>
