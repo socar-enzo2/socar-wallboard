@@ -192,9 +192,29 @@ const S = {
 //  TOKEN — Cloud Functions에서 발급받기
 // ══════════════════════════════════════════════
 async function fetchTokenFromCF() {
-  const r = await fetch(S.tokenFnUrl);
-  if (!r.ok) throw new Error(`CF ${r.status}: ${r.statusText}`);
-  const d = await r.json();
+  const d = await new Promise((resolve, reject) => {
+    const cbName = '_gcToken_' + Date.now();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      reject(new Error('토큰 요청 타임아웃'));
+    }, 10000);
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      delete window[cbName];
+      document.body.removeChild(script);
+      resolve(data);
+    };
+    script.src = S.tokenFnUrl + '?callback=' + cbName;
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[cbName];
+      document.body.removeChild(script);
+      reject(new Error('스크립트 로드 실패'));
+    };
+    document.body.appendChild(script);
+  });
   if (d.error) throw new Error(d.error);
   S.token = {val: d.access_token, exp: d.expires_at};
   // 만료 2분 전 자동 갱신
