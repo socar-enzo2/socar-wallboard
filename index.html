@@ -193,31 +193,28 @@ const S = {
 // ══════════════════════════════════════════════
 async function fetchTokenFromCF() {
   const d = await new Promise((resolve, reject) => {
-    const cbName = '_gcToken_' + Date.now();
-    const script = document.createElement('script');
-    const timer = setTimeout(() => {
-      delete window[cbName];
-      document.body.removeChild(script);
-      reject(new Error('토큰 요청 타임아웃'));
-    }, 10000);
-    window[cbName] = (data) => {
-      clearTimeout(timer);
-      delete window[cbName];
-      document.body.removeChild(script);
-      resolve(data);
+    const timer = setTimeout(() => reject(new Error('토큰 요청 타임아웃')), 15000);
+    const handler = (e) => {
+      if (e.data && e.data.type === 'GC_TOKEN') {
+        clearTimeout(timer);
+        window.removeEventListener('message', handler);
+        resolve(e.data);
+      }
     };
-    script.src = S.tokenFnUrl + '?callback=' + cbName;
-    script.onerror = () => {
-      clearTimeout(timer);
-      delete window[cbName];
-      document.body.removeChild(script);
-      reject(new Error('스크립트 로드 실패'));
-    };
-    document.body.appendChild(script);
+    window.addEventListener('message', handler);
+
+    // 숨김 iframe으로 Apps Script 호출
+    let iframe = document.getElementById('_gcTokenFrame');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = '_gcTokenFrame';
+      iframe.style.cssText = 'display:none;width:0;height:0;border:0';
+      document.body.appendChild(iframe);
+    }
+    iframe.src = S.tokenFnUrl + '?t=' + Date.now();
   });
   if (d.error) throw new Error(d.error);
   S.token = {val: d.access_token, exp: d.expires_at};
-  // 만료 2분 전 자동 갱신
   if (S.tokTimer) clearTimeout(S.tokTimer);
   const msLeft = d.expires_at - Date.now() - 120000;
   if (msLeft > 0) S.tokTimer = setTimeout(silentRefresh, msLeft);
